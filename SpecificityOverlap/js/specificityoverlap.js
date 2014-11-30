@@ -60,7 +60,8 @@ SpecificityOverlap.prototype.create_network = function(connectors, check_second)
         .links(this.connectors)
         .size([width, height])
         .linkDistance(function(d){
-            return d.distance*20;
+            //return d.distance*20;
+            return 100;
         })
         .charge(-300)
         .on("tick", tick)
@@ -69,13 +70,24 @@ SpecificityOverlap.prototype.create_network = function(connectors, check_second)
     var path = this.svg.append("g").selectAll("path")
         .data(force.links())
       .enter().append("path")
-        .attr("class", function(d) { return "link " });
+      .style('stroke', function(d){
+        if(d.source.is_second == false){
+          return 'blue'
+        }
+        return 'green'
+      })
+      .style('stroke-width', function(d){
+          console.log(d.distance/2)
+          return d.distance/2;
+      })
+      .attr("class", function(d) { return "link " });
 
     var circle = this.svg.append("g").selectAll("circle")
         .data(force.nodes())
       .enter().append("circle")
         .attr("r", 6)
         .attr("name", function(d){return d.name})
+        .attr("style", function(d) {if (d.is_second == true) {return 'fill:#4A9130'} else {return 'fill:#09BEE8'} })
         .call(force.drag);
 
     var text = this.svg.append("g").selectAll("text")
@@ -155,7 +167,8 @@ SpecificityOverlap.prototype.overlap_networks = function(){
         .links(this.network_connectors)
         .size([this.width, this.height])
         .linkDistance(function(d){
-            return d.distance*20;
+            //return d.distance*20;
+            return 100;
         })
         .charge(-1000)
         .on("tick", tick)
@@ -164,6 +177,19 @@ SpecificityOverlap.prototype.overlap_networks = function(){
     var path = this.svg.append("g").selectAll("path")
         .data(force.links())
       .enter().append("path")
+        .style('stroke', function(d){
+          if(d.source.is_overlap == true){
+            return 'black'
+          }else if(d.target.is_second == true){
+            return 'blue'
+          }else if(d.target.is_second == false){
+            return 'green'
+          }
+          
+        })
+        .style('stroke-width', function(d){
+          return d.distance/2;
+        })
         .attr("class", function(d) { return "link " });
 
     var circle = this.svg.append("g").selectAll("circle")
@@ -171,7 +197,12 @@ SpecificityOverlap.prototype.overlap_networks = function(){
       .enter().append("circle")
         .attr("r", 6)
         .attr("name", function(d) {return d.name} ) 
-        .attr("style", function(d) {if (d.is_overlapped == true) {return 'fill:#432F75'} })
+        .attr("style", function(d) {
+          if (d.is_overlapped == true){
+            return 'fill:#432F75'
+          } else if (d.is_second == true) {
+            return 'fill:#4A9130'
+          } return 'fill:#09BEE8'})
         .call(force.drag);
 
     var text = this.svg.append("g").selectAll("text")
