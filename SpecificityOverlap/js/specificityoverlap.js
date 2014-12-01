@@ -7,9 +7,11 @@ var SpecificityOverlap = function (selector) {
 
     var that = this;
     this.selector = selector;
+    this.scale_factor_one = 10;
+    this.scale_factor_two = 10;
 
-    this.width = 960;
-    this.height = 500;
+    this.width = 1000;
+    this.height = 1000;
 
     this.svg = d3.select(this.selector).append("svg")
         .attr("width", this.width)
@@ -23,6 +25,7 @@ var SpecificityOverlap = function (selector) {
     this.connectors_two = [];
     this.network_overlap = [];
     this.network_connectors = [];
+
 }
 
 SpecificityOverlap.prototype.create_network = function(connectors, check_second){
@@ -31,20 +34,32 @@ SpecificityOverlap.prototype.create_network = function(connectors, check_second)
     this.check_second = check_second;
     var width = this.width;
     var height = this.height;
+    var scale_factor;
 
     var nodes = {};
 
     // Compute the distinct nodes from the links.
     this.connectors.forEach(function(link) {
-      link.source = nodes[link.source] || (nodes[link.source] = {name: link.source, 'is_overlapped': false, 'is_second': check_second});
-      link.target = nodes[link.target] || (nodes[link.target] = {name: link.target, 'is_overlapped': false, 'is_second': check_second});
+      link['is_second'] = check_second;
+      link.source = nodes[link.source] || (nodes[link.source] = {name: link.source, 'is_overlapped': false, 'is_second': check_second, 'size' : link.sSize});
+      link.target = nodes[link.target] || (nodes[link.target] = {name: link.target, 'is_overlapped': false, 'is_second': check_second, 'size' : link.tSize});
     });
+
+    // scale node sizes
+    var max_size = 0;
+    for(var i in nodes){
+      if(nodes[i].size > max_size){
+        max_size = nodes[i].size
+      }
+    }
 
     if(this.check_second == true){
         width = this.width/2;
         height = this.height/2;
         this.connectors_two = this.connectors;
         this.network_two = nodes;
+        this.scale_factor_two = Math.pow(10, max_size.toString().length-2)
+        scale_factor = this.scale_factor_two;
 
         //reset overlap structures
         this.network_connectors = [];
@@ -53,6 +68,8 @@ SpecificityOverlap.prototype.create_network = function(connectors, check_second)
     }else{
         this.connectors_one = this.connectors;
         this.network_one = nodes;
+        this.scale_factor_one = Math.pow(10, max_size.toString().length-2)
+        scale_factor = this.scale_factor_one;
     }
 
     var force = d3.layout.force()
@@ -60,8 +77,8 @@ SpecificityOverlap.prototype.create_network = function(connectors, check_second)
         .links(this.connectors)
         .size([width, height])
         .linkDistance(function(d){
-            //return d.distance*20;
-            return 100;
+            return d.distance*50;
+            //return 300;
         })
         .charge(-300)
         .on("tick", tick)
@@ -77,15 +94,20 @@ SpecificityOverlap.prototype.create_network = function(connectors, check_second)
         return 'green'
       })
       .style('stroke-width', function(d){
-          console.log(d.distance/2)
-          return d.distance/2;
+          return d.distance;
       })
       .attr("class", function(d) { return "link " });
 
     var circle = this.svg.append("g").selectAll("circle")
         .data(force.nodes())
       .enter().append("circle")
-        .attr("r", 6)
+        .attr("r", function(d){
+          var size = d.size/scale_factor;
+          if(size){
+            return size
+          }
+          return .001;
+        })
         .attr("name", function(d){return d.name})
         .attr("style", function(d) {if (d.is_second == true) {return 'fill:#4A9130'} else {return 'fill:#09BEE8'} })
         .call(force.drag);
@@ -125,6 +147,10 @@ SpecificityOverlap.prototype.create_network = function(connectors, check_second)
 }
 
 SpecificityOverlap.prototype.overlap_networks = function(){
+    var scale_factor = this.scale_factor_one;
+    if (this.scale_factor_one <= this.scale_factor_two){
+      scale_factor = this.scale_factor_two;
+    }
 
     this.network_connectors = this.connectors_one.concat(this.connectors_two);
 
@@ -146,7 +172,17 @@ SpecificityOverlap.prototype.overlap_networks = function(){
 
             //update node overlapped value
             this.network_overlap[check_name]['is_overlapped'] = true;
-            console.log(this.network_overlap[check_name])
+            this.network_overlap[check_name]['size_2'] = this.network_one[i].size
+
+            //visualize both clusters
+            // if(this.network_overlap[check_name].size != this.network_one[i].size){
+            //   if(this.network_one[i].size < this.network_overlap[check_name].size){
+            //     this.network_overlap[check_name]['size_2'] = this.network_one[i].size
+            //   }else{
+            //     this.network_overlap[check_name]['size_2'] = this.network_overlap[i].size
+            //     this.network_overlap[check_name].size = this.network_one[i].size
+            //   }
+            // }
 
             //update nodes in links
             for(var i in this.network_connectors){
@@ -167,8 +203,7 @@ SpecificityOverlap.prototype.overlap_networks = function(){
         .links(this.network_connectors)
         .size([this.width, this.height])
         .linkDistance(function(d){
-            //return d.distance*20;
-            return 100;
+            return d.distance*50;
         })
         .charge(-1000)
         .on("tick", tick)
@@ -178,24 +213,28 @@ SpecificityOverlap.prototype.overlap_networks = function(){
         .data(force.links())
       .enter().append("path")
         .style('stroke', function(d){
-          if(d.source.is_overlap == true){
-            return 'black'
-          }else if(d.target.is_second == true){
-            return 'blue'
-          }else if(d.target.is_second == false){
+          if(d.is_second == true ){
             return 'green'
+          }else if(d.is_second = true){
+            return 'blue'
           }
           
         })
         .style('stroke-width', function(d){
-          return d.distance/2;
+          return d.distance;
         })
         .attr("class", function(d) { return "link " });
 
     var circle = this.svg.append("g").selectAll("circle")
         .data(force.nodes())
       .enter().append("circle")
-        .attr("r", 6)
+        .attr("r", function(d){
+          var size = d.size/scale_factor;
+          if(size){
+            return size
+          }
+          return .001;
+        })
         .attr("name", function(d) {return d.name} ) 
         .attr("style", function(d) {
           if (d.is_overlapped == true){

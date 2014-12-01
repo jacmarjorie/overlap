@@ -52,7 +52,7 @@ def generateJSON(clusterFile, seqCounts):
 			cluster_num += 1
 
 	# compute pairwise distances between sequences
-	pairwise_dists = {}
+	pairwise_dists = ''
 	main_cluster = 1
 	while main_cluster < cluster_num:
 		cluster_one = "cluster_"+str(main_cluster)
@@ -66,7 +66,7 @@ def generateJSON(clusterFile, seqCounts):
 			
 			# median counts
 			# 23 6
-    	# 572 7
+    		# 572 7
 
 			distances.sort()
 			if len(distances) % 2 == 0:
@@ -81,12 +81,15 @@ def generateJSON(clusterFile, seqCounts):
 			# average counts
 			# 1 5
     	#	593 6
-      # 1 7
+     	# 1 7
 			#print sum(distances)/len(distances)
-			
-			print("{ source: '" + cluster_one + "', target: '" + cluster_two + "', distance: " + str(median) + ", sSize: " + str(cluster_freqs[cluster_one]) + " }")
+			if comp_cluster == cluster_num-1 and comp_cluster == main_cluster+1:
+				pairwise_dists += "{ source: '" + cluster_one + "', target: '" + cluster_two + "', distance: " + str(median) + ", sSize: " + str(cluster_freqs[cluster_one]) + ", tSize: " + str(cluster_freqs[cluster_two]) + " }"
+			else:
+				pairwise_dists += "{ source: '" + cluster_one + "', target: '" + cluster_two + "', distance: " + str(median) + ", sSize: " + str(cluster_freqs[cluster_one]) + ", tSize: " + str(cluster_freqs[cluster_two]) + " }, "
 			comp_cluster += 1
 		main_cluster += 1
+	print pairwise_dists
 
 def main(argv=None):
 	if argv == None:   
