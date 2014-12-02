@@ -19,6 +19,37 @@ def getDistance(seq1, seq2):
 			dist += 1
 	return dist
 
+def establishMatrix():
+	global transition_matrix
+	transition_matrix = {}
+	aminos = []
+	for line in trans_matrix:
+		line = line.strip('\n')
+		if '#' not in line:
+			if ' ' == line[0]:
+				aminos = line.split()
+				print(aminos)
+			else:
+				freq = line.split()
+				for i in range(1,len(freq)):
+					entry = (freq[0], aminos[i-1])
+					entry_op = (aminos[i-1], freq[0])
+					if entry not in transition_matrix:
+						if entry_op not in transition_matrix:
+							transition_matrix[entry] = int(freq[i])+4
+
+def getTransDistance(seq1, seq2):
+	dist = 0
+	seq_len = len(seq1)
+	for i in range(seq_len):
+		entry = (seq1[i], seq2[i])
+		entry_2 = (seq2[i], seq1[i])
+		if entry not in transition_matrix:
+			dist += int(transition_matrix[entry_2])
+		else:
+			dist += int(transition_matrix[entry])
+	return dist
+
 def generateJSON(clusterFile, seqCounts):
 
 	# get the abundance of each peptide in the system
@@ -62,7 +93,7 @@ def generateJSON(clusterFile, seqCounts):
 			distances = []
 			for peptide in all_clusters[cluster_one]:
 				for peptide_two in all_clusters[cluster_two]:
-					distances.append(getDistance(peptide, peptide_two))
+					distances.append(getTransDistance(peptide, peptide_two))
 			
 			# median counts
 			# 23 6
@@ -80,8 +111,8 @@ def generateJSON(clusterFile, seqCounts):
 
 			# average counts
 			# 1 5
-    	#	593 6
-     	# 1 7
+    	    # 593 6
+     		# 1 7
 			#print sum(distances)/len(distances)
 			if comp_cluster == cluster_num-1 and comp_cluster == main_cluster+1:
 				pairwise_dists += "{ source: '" + cluster_one + "', target: '" + cluster_two + "', distance: " + str(median) + ", sSize: " + str(cluster_freqs[cluster_one]) + ", tSize: " + str(cluster_freqs[cluster_two]) + " }"
@@ -89,17 +120,20 @@ def generateJSON(clusterFile, seqCounts):
 				pairwise_dists += "{ source: '" + cluster_one + "', target: '" + cluster_two + "', distance: " + str(median) + ", sSize: " + str(cluster_freqs[cluster_one]) + ", tSize: " + str(cluster_freqs[cluster_two]) + " }, "
 			comp_cluster += 1
 		main_cluster += 1
-	print pairwise_dists
+	print(pairwise_dists)
 
 def main(argv=None):
 	if argv == None:   
 		argv = sys.argv[1:]
 	try:
+		global trans_matrix
+		trans_matrix = open('blosum62.txt', "r")
 		cluster_file = open(argv[0], "r")
 		seq_counts = open(argv[1], "r")
 	except:
 		err = "clusters_to_json.py <cluster_file> <seq_counts>"
 
+	establishMatrix()
 	generateJSON(cluster_file, seq_counts)
 
 if __name__ == "__main__":
