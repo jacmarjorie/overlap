@@ -37,12 +37,24 @@ SpecificityOverlap.prototype.create_network = function(connectors, check_second)
     var scale_factor;
 
     var nodes = {};
-
+    console.log(this.connectors[0])
     // Compute the distinct nodes from the links.
     this.connectors.forEach(function(link) {
-      link['is_second'] = check_second;
-      link.source = nodes[link.source] || (nodes[link.source] = {name: link.source, 'is_overlapped': false, 'is_second': check_second, 'size' : link.sSize});
-      link.target = nodes[link.target] || (nodes[link.target] = {name: link.target, 'is_overlapped': false, 'is_second': check_second, 'size' : link.tSize});
+      if(!link['is_overlap']){
+        link['is_second'] = check_second;
+        link.source = nodes[link.source] || (nodes[link.source] = {name: link.source, 'is_overlap': false, 'is_second': check_second, 'size' : link.sSize});
+        link.target = nodes[link.target] || (nodes[link.target] = {name: link.target, 'is_overlap': false, 'is_second': check_second, 'size' : link.tSize});
+        console.log(link.source.name + " -> " + link.target.name)
+      }else if(link['net_id']){
+        console.log(link['net_id'])
+        link.source = nodes[link.source] || (nodes[link.source] = {name: link.source, 'is_overlap': false, 'size' : link.sSize, 'net_id': link.net_id});
+        link.target = nodes[link.target] || (nodes[link.target] = {name: link.target, 'is_overlap': false, 'size' : link.tSize, 'net_id': link.net_id});
+        console.log(link.source.name + " -> " + link.target.name)
+      }else{
+        link.source = nodes[link.source] || (nodes[link.source] = {name: link.source, 'is_overlap': true, 'size' : link.sSize});
+        link.target = nodes[link.target] || (nodes[link.target] = {name: link.target, 'is_overlap': true, 'size' : link.tSize});
+        console.log(link.source.name + " -> " + link.target.name)
+      }
     });
 
     // scale node sizes
@@ -52,6 +64,7 @@ SpecificityOverlap.prototype.create_network = function(connectors, check_second)
         max_size = nodes[i].size
       }
     }
+    //console.log(max_size)
 
     if(this.check_second == true){
         width = this.width/2;
@@ -70,6 +83,7 @@ SpecificityOverlap.prototype.create_network = function(connectors, check_second)
         this.network_one = nodes;
         this.scale_factor_one = Math.pow(10, max_size.toString().length-2)
         scale_factor = this.scale_factor_one;
+        //console.log(scale_factor)
     }
 
     var force = d3.layout.force()
@@ -109,7 +123,13 @@ SpecificityOverlap.prototype.create_network = function(connectors, check_second)
           return .001;
         })
         .attr("name", function(d){return d.name})
-        .attr("style", function(d) {if (d.is_second == true) {return 'fill:#4A9130'} else {return 'fill:#09BEE8'} })
+        .attr("style", function(d) {
+          if (d.is_overlap == true){
+            return 'fill:#432F75'
+          } else if (d.is_second == true) {
+            return 'fill:#4A9130'
+          } return 'fill:#09BEE8'
+        })
         .call(force.drag);
 
     var text = this.svg.append("g").selectAll("text")
@@ -239,7 +259,7 @@ SpecificityOverlap.prototype.overlap_networks = function(){
         })
         .attr("name", function(d) {return d.name} ) 
         .attr("style", function(d) {
-          if (d.is_overlapped == true){
+          if (d.is_overlap == true){
             return 'fill:#432F75'
           } else if (d.is_second == true) {
             return 'fill:#4A9130'
