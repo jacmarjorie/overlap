@@ -77,7 +77,7 @@ SpecificityOverlap.prototype.create_network = function(connectors, check_second)
         .links(this.connectors)
         .size([width, height])
         .linkDistance(function(d){
-            return d.distance*50;
+            return d.distance*20;
             //return 300;
         })
         .charge(-300)
@@ -94,7 +94,7 @@ SpecificityOverlap.prototype.create_network = function(connectors, check_second)
         return 'green'
       })
       .style('stroke-width', function(d){
-          return d.distance;
+          return d.distance/2;
       })
       .attr("class", function(d) { return "link " });
 
@@ -147,6 +147,8 @@ SpecificityOverlap.prototype.create_network = function(connectors, check_second)
 }
 
 SpecificityOverlap.prototype.overlap_networks = function(){
+
+    // manage scale for both networks
     var scale_factor = this.scale_factor_one;
     if (this.scale_factor_one <= this.scale_factor_two){
       scale_factor = this.scale_factor_two;
@@ -203,7 +205,7 @@ SpecificityOverlap.prototype.overlap_networks = function(){
         .links(this.network_connectors)
         .size([this.width, this.height])
         .linkDistance(function(d){
-            return d.distance*50;
+            return d.distance*20;
         })
         .charge(-1000)
         .on("tick", tick)
@@ -221,7 +223,7 @@ SpecificityOverlap.prototype.overlap_networks = function(){
           
         })
         .style('stroke-width', function(d){
-          return d.distance;
+          return d.distance/3;
         })
         .attr("class", function(d) { return "link " });
 
@@ -230,10 +232,10 @@ SpecificityOverlap.prototype.overlap_networks = function(){
       .enter().append("circle")
         .attr("r", function(d){
           var size = d.size/scale_factor;
-          if(size){
+          if(size > 5){
             return size
           }
-          return .001;
+          return 5;
         })
         .attr("name", function(d) {return d.name} ) 
         .attr("style", function(d) {
