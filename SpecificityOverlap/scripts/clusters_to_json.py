@@ -88,10 +88,12 @@ def getClusters(clusters, counts, this_id):
 			cluster_num += 1
 
 	# compute pairwise distances between peptides to establish sequence distance
+	#print("CLUSTER_ONE\t"+"CLUSTER_TWO\t"+"AVG_DIST\t"+"MEDIAN_DIST\t"+"NEAREST_DIST")
 	pw_distances = {}
 	pairwise_dists = ''
 	pairwise_dists_object = {}
 	main_cluster = 1
+
 	while main_cluster < cluster_num:
 		cluster_one = this_id + "_cluster_" + str(main_cluster)
 		comp_cluster = main_cluster + 1
@@ -105,24 +107,24 @@ def getClusters(clusters, counts, this_id):
 			# median counts
 			# 23 6
     		# 572 7
-
-			distances.sort()
-			if len(distances) % 2 == 0:
-				l = len(distances)/2
+    		# average neighbor
+			sort_distances = sorted(distances)
+			if len(sort_distances) % 2 == 0:
+				l = len(sort_distances)/2
 				r = l + 1
-				median = float(distances[l] + distances[r])/2
+				median = float(sort_distances[l] + sort_distances[r])/2
 				#print int(median)
 			else:
-				median = distances[len(distances)/2]
+				median = sort_distances[len(sort_distances)/2]
 				#print median
 			# average counts
 			# 1 5
     	    # 593 6
      		# 1 7
-			#print sum(distances)/len(distances)
+			#print(cluster_one +'\t' + cluster_two + '\t' + str(sum(sort_distances)/len(sort_distances)) + '\t' + str(median) + '\t' + str(sort_distances[0]))
 			pw_distances[cluster_one+"-"+cluster_two] = median
 			if comp_cluster == cluster_num-1 and comp_cluster == main_cluster+1:
-				pairwise_dists += "{ source: '" + cluster_one + "', target: '" + cluster_two + "', distance: " + str(median) + ", sSize: " + str(cluster_freqs[cluster_one]) + ", tSize: " + str(cluster_freqs[cluster_two]) + " }"
+				pairwise_dists += "{ source: '" + cluster_one + "', target: '" + cluster_two + "', distance: " + str(distances[0]) + ", sSize: " + str(cluster_freqs[cluster_one]) + ", tSize: " + str(cluster_freqs[cluster_two]) + " }"
 				#pairwise_dists_object = { source: cluster_one, target: cluster_two, distance: str(median), sSize: str(cluster_freqs[cluster_one]), tSize: str(cluster_freqs[cluster_two]) }
 			else:
 				pairwise_dists += "{ source: '" + cluster_one + "', target: '" + cluster_two + "', distance: " + str(median) + ", sSize: " + str(cluster_freqs[cluster_one]) + ", tSize: " + str(cluster_freqs[cluster_two]) + " }, "
@@ -143,6 +145,9 @@ def findOverlap(network_one, network_two, freq_one, freq_two):
 	sig_overlap = {}
 	percents = []
 
+	#print(network_one)
+	#print(network_two)
+
 	#new_network = dict(network_one, **network_two)
 	#print('CLUSTER_ONE' + "\t" + 'CLUSTER_TWO' + '\t' + 'PERCENT_OVERLAP' + '\t' + 'PERCENT_ONE_ONLY' + '\t' + 'PERCENT_TWO_ONLY')
 	for cluster_one in network_one:
@@ -151,6 +156,8 @@ def findOverlap(network_one, network_two, freq_one, freq_two):
 			for peptide in network_one[cluster_one]:
 				if peptide in network_two[cluster_two]:
 					overlapped_group.append(peptide)
+					#print("we have overlap with this: " + peptide + " and it's frequency in one " + str(network_one[cluster_one][peptide]) + " and it's frequency in two " + str(network_two[cluster_two][peptide]))
+					
 			combined_length = float(len(network_one[cluster_one]) + len(network_two[cluster_two]) - len(overlapped_group))
 			percentage_overlap = round(float(len(overlapped_group)/combined_length),3)
 			percentage_one = round(float((len(network_one[cluster_one])-len(overlapped_group))/combined_length),3)
@@ -160,7 +167,7 @@ def findOverlap(network_one, network_two, freq_one, freq_two):
 
 			percents.append(percentage_overlap)
 			if percentage_overlap > .095:
-				sig_overlap[cluster_one+"-"+cluster_two] = { 'percent_overlap': percentage_overlap, 'percent_one': percentage_one, 'percent_two': percentage_two, 'size' : freq_one[cluster_one] + freq_two[cluster_two] }
+				sig_overlap[cluster_one+"-"+cluster_two] = { 'percent_overlap': percentage_overlap, 'percent_one': percentage_one, 'percent_two': percentage_two, 'size': 'TBD' }
 	
 	# take top ten percent of overlap scores
 	#percents.sort()
@@ -174,7 +181,7 @@ def findOverlap(network_one, network_two, freq_one, freq_two):
 	return sig_overlap
 
 def getOverlapNetwork(net_one, net_two, overlap):
-	
+	print(overlap)
 	overlap_network = {}
 	old_clusters = {}
 	for key in overlap:
@@ -227,7 +234,7 @@ def getOverlapNetwork(net_one, net_two, overlap):
 					overlap_network[new_source+"-"+old_clusters[i]] = {'source' : new_source, 'sSize': new_ssize, 'target': old_clusters[i], 'tSize': overlap[old_clusters[i]]['size'], 'distance' : new_dist, 'is_overlap' : 'true', 'percent_overlap' : overlap[old_clusters[i]]['percent_overlap'], 'percent_one' : overlap[old_clusters[i]]['percent_one'], 'percent_two' : overlap[old_clusters[i]]['percent_two']}
 				elif i == net_two[edge]['source']:
 					overlap_network[old_clusters[i]+"-"+new_target] = {'source' : old_clusters[i], 'sSize': overlap[old_clusters[i]]['size'], 'target': new_target, 'tSize': new_tsize, 'distance' : new_dist, 'is_overlap' : 'true', 'percent_overlap' : overlap[old_clusters[i]]['percent_overlap'], 'percent_one' : overlap[old_clusters[i]]['percent_one'], 'percent_two' : overlap[old_clusters[i]]['percent_two']}
-		if(not made_new):
+		if not made_new:
 			new_net_id = net_two[edge]['net_id']
 			overlap_network[edge] = {'source' : new_source, 'sSize': new_ssize, 'target': new_target, 'tSize': new_tsize, 'distance' : new_dist, 'is_overlap' : 'false', 'net_id': new_net_id}	
 			#print('finding an edge that wasnt made new')
@@ -264,12 +271,16 @@ def main(argv=None):
 	clusters_one, network_obj_one, freqs_one = getClusters(cluster_file_one, seq_counts_one, "PAP1")
 	clusters_two, network_obj_two, freqs_two = getClusters(cluster_file_two, seq_counts_two, "PAP2")
 
-	overlap = findOverlap(clusters_one, clusters_two, freqs_one, freqs_two)
-	overlapped_network = getOverlapNetwork(network_obj_one, network_obj_two, overlap)
+	for key in clusters_two:
+		print key
+		print clusters_two[key]
+		print ""
+	#overlap = findOverlap(clusters_one, clusters_two, freqs_one, freqs_two)
+	#overlapped_network = getOverlapNetwork(network_obj_one, network_obj_two, overlap)
 	
 	#printNetwork(network_obj_two)
 	#printNetwork(network_obj_one)
-	printNetwork(overlapped_network)
+	#printNetwork(overlapped_network)
 
 if __name__ == "__main__":
 	sys.exit(main())

@@ -63,8 +63,10 @@ var main = function () {
         $('#load_button').css('visibility', 'hidden');
         $('#overlap_button').css('visibility', 'visible');
         $('#undo_overlap').css('visibility', 'visible');
-        that.specificity_overlap.create_network(that.PAP1_5_hd, false);
-        that.specificity_overlap.create_network(that.PAP2_5_hd, true);
+        that.specificity_overlap.create_network(that.connectors_test_two, false)
+        that.specificity_overlap.create_network(that.connectors_test_three, true)
+       // that.specificity_overlap.create_network(that.PAP1_5_hd, false);
+        //that.specificity_overlap.create_network(that.PAP2_5_hd, true);
     });
 
     $('#overlap_button').click(this, function(event){
@@ -72,15 +74,15 @@ var main = function () {
         $("svg").empty();
         $('#undo_overlap')[0].disabled = false;
         $('#overlap_button')[0].disabled = true;
-        //that.specificity_overlap.overlap_networks();
-        that.specificity_overlap.create_network(that.PAP1_PAP2_5_overlap, false)
+        that.specificity_overlap.overlap_networks();
+        //that.specificity_overlap.create_network(that.PAP1_PAP2_5_overlap, false)
     });
 
     $('#undo_overlap').click(this, function(event){
         var that = event.data;
         alert("UNDER CONSTRUCTION!")
         //var second = false;
-        // $("svg").empty();
+        // $("viewer_zoom").empty();
         // $('#overlap_button')[0].disabled = false;
         // $('#undo_overlap')[0].disabled = true;
         // that.specificity_overlap.create_network(that.connectors_one, second);
